@@ -18,7 +18,7 @@ export function Header({ onClear, hasMessages }: Props) {
           </div>
           <div className="leading-tight">
             <h1 className="text-base font-semibold tracking-tight sm:text-lg">
-              AI Admission Assistant
+              Darrang College Assistant
             </h1>
             <div className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-[10px] font-medium text-accent-foreground">
               <Sparkles className="h-2.5 w-2.5" />

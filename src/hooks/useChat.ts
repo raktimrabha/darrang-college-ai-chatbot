@@ -97,7 +97,7 @@ export function useChat() {
         const isOffline = err instanceof Error && err.message.includes("offline");
         const text = isOffline
           ? "You appear to be offline."
-          : "Sorry, I couldn't get a response. Please try again or contact the admissions office.";
+          : "Sorry, I couldn't get a response. Please try again or contact the Darrang College admissions office.";
         dispatch({
           type: "ADD",
           message: {

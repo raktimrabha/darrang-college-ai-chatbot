@@ -38,10 +38,10 @@ export function ChatWindow({ messages, isLoading, onFeedback, onPickSuggestion }
           </div>
           <div className="space-y-2">
             <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              Hi! <span className="inline-block animate-pulse-soft">👋</span> I'm your college assistant
+              Hi! <span className="inline-block animate-pulse-soft">👋</span> I'm the Darrang College assistant
             </h2>
             <p className="mx-auto max-w-md text-sm text-muted-foreground sm:text-base">
-              Ask me anything about admissions, courses, fees, or exams — I'm here to help.
+              Ask me anything about Darrang College admissions, courses, fees, or exams — I'm here to help.
             </p>
           </div>
           <div className="w-full pt-2">
