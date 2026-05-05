@@ -2,6 +2,8 @@ import { useState } from "react";
 import { GraduationCap, ThumbsUp, ThumbsDown, AlertCircle, Copy, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Message } from "@/hooks/useChat";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 function formatTime(d: Date) {
   return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
@@ -55,14 +57,21 @@ export function MessageBubble({ message, onFeedback }: Props) {
       <div className={cn("flex max-w-[85%] flex-col sm:max-w-[75%]", isUser ? "items-end" : "items-start")}>
         <div
           className={cn(
-            "whitespace-pre-wrap break-words px-4 py-2.5 text-[14px] leading-relaxed shadow-bubble",
+            "break-words px-4 py-2.5 text-[14px] leading-relaxed shadow-bubble",
+            isUser ? "whitespace-pre-wrap" : "prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:p-0 prose-pre:bg-transparent prose-pre:m-0",
             isUser
               ? "rounded-2xl rounded-br-md bg-gradient-user text-user-bubble-foreground"
               : "rounded-2xl rounded-bl-md border border-border bg-card text-card-foreground",
             message.isError && "border-destructive/30 bg-destructive/5 text-foreground",
           )}
         >
-          {message.text}
+          {isUser ? (
+            message.text
+          ) : (
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {message.text}
+            </ReactMarkdown>
+          )}
         </div>
 
         <div
