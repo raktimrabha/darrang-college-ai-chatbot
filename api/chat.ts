@@ -1,8 +1,13 @@
-import { streamText } from 'ai';
-import { google } from '@ai-sdk/google';
+import { streamText, convertToModelMessages } from 'ai';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
+
+// Initialize the Google provider with the user's GEMINI_API_KEY
+const google = createGoogleGenerativeAI({
+  apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+});
 
 export async function POST(req: Request) {
   try {
@@ -13,11 +18,12 @@ export async function POST(req: Request) {
     const result = streamText({
       model: google('gemini-2.5-flash'),
       system: "You are a helpful, friendly, and knowledgeable assistant for Darrang College. Answer questions about admissions, courses, fees, results, campus, and exams accurately.",
-      messages,
+      messages: await convertToModelMessages(messages),
     });
 
-    // Respond with the stream
-    return result.toTextStreamResponse();
+
+    // Respond with the structured message stream
+    return result.toUIMessageStreamResponse();
   } catch (error) {
     console.error('Chat API Error:', error);
     return new Response(JSON.stringify({ error: 'Failed to process chat request' }), {
