@@ -1,5 +1,6 @@
-import { useCallback, useReducer, useRef } from "react";
-import { sendChatMessage, type ChatHistoryItem } from "@/utils/api";
+import { useCallback, useMemo, useState } from "react";
+import { useChat as useAiChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 
 export type Message = {
   id: string;
@@ -10,122 +11,87 @@ export type Message = {
   isError?: boolean;
 };
 
-type State = {
-  messages: Message[];
-  isLoading: boolean;
-  error: string | null;
-};
-
-type Action =
-  | { type: "ADD"; message: Message }
-  | { type: "SET_LOADING"; value: boolean }
-  | { type: "SET_ERROR"; value: string | null }
-  | { type: "FEEDBACK"; id: string; value: "up" | "down" }
-  | { type: "RESET" };
-
-const initialState: State = {
-  messages: [],
-  isLoading: false,
-  error: null,
-};
-
-function reducer(state: State, action: Action): State {
-  switch (action.type) {
-    case "ADD":
-      return { ...state, messages: [...state.messages, action.message] };
-    case "SET_LOADING":
-      return { ...state, isLoading: action.value };
-    case "SET_ERROR":
-      return { ...state, error: action.value };
-    case "FEEDBACK":
-      return {
-        ...state,
-        messages: state.messages.map((m) =>
-          m.id === action.id ? { ...m, feedback: action.value } : m,
-        ),
-      };
-    case "RESET":
-      return initialState;
-    default:
-      return state;
-  }
-}
-
-const uid = () =>
-  (typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+// Use the new v6 transport system
+const transport = new DefaultChatTransport({ api: "/api/chat" });
 
 export function useChat() {
-  const [state, dispatch] = useReducer(reducer, initialState);
-  const abortRef = useRef<AbortController | null>(null);
+  const [feedbacks, setFeedbacks] = useState<Record<string, "up" | "down">>({});
+
+  const {
+    messages: aiMessages,
+    sendMessage,
+    status,
+    error,
+    setMessages,
+    stop
+  } = useAiChat({
+    transport,
+    onError: (err) => {
+      console.error("Chat API Error:", err);
+    },
+  });
+
+  const messages: Message[] = useMemo(() => {
+    const mapped: Message[] = aiMessages.map((m) => {
+      // Extract text content from parts
+      const text = m.parts 
+        ? m.parts.filter((p: any) => p.type === 'text').map((p: any) => p.text).join('')
+        : '';
+
+      return {
+        id: m.id,
+        role: m.role === "user" ? "user" : "bot",
+        text,
+        timestamp: new Date(), // createdAt was removed in v6
+        feedback: feedbacks[m.id] || null,
+        isError: false,
+      };
+    });
+
+    if (error) {
+      const isOffline = error.message?.toLowerCase().includes("offline") || 
+        (typeof navigator !== "undefined" && navigator.onLine === false);
+      
+      mapped.push({
+        id: `error-${Date.now()}`,
+        role: "bot",
+        text: isOffline 
+          ? "You appear to be offline." 
+          : "Sorry, I couldn't get a response. Please try again or contact the Darrang College admissions office.",
+        timestamp: new Date(),
+        isError: true,
+      });
+    }
+
+    return mapped;
+  }, [aiMessages, feedbacks, error]);
 
   const send = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
-      if (!trimmed || state.isLoading) return;
-
-      const userMsg: Message = {
-        id: uid(),
-        role: "user",
-        text: trimmed,
-        timestamp: new Date(),
-      };
-      dispatch({ type: "ADD", message: userMsg });
-      dispatch({ type: "SET_LOADING", value: true });
-      dispatch({ type: "SET_ERROR", value: null });
-
-      const history: ChatHistoryItem[] = state.messages.slice(-6).map((m) => ({
-        role: m.role === "user" ? "user" : "assistant",
-        content: m.text,
-      }));
-
-      const ctrl = new AbortController();
-      abortRef.current = ctrl;
-      const timeout = setTimeout(() => ctrl.abort(), 15000);
-
+      if (!trimmed || status === "submitted" || status === "streaming") return;
+      
       try {
-        if (typeof navigator !== "undefined" && navigator.onLine === false) {
-          throw new Error("You appear to be offline.");
-        }
-        const reply = await sendChatMessage(trimmed, history, ctrl.signal);
-        dispatch({
-          type: "ADD",
-          message: { id: uid(), role: "bot", text: reply, timestamp: new Date(), feedback: null },
-        });
+        await sendMessage({ role: "user", parts: [{ type: "text", text: trimmed }] } as any);
       } catch (err) {
-        const isOffline = err instanceof Error && err.message.includes("offline");
-        const text = isOffline
-          ? "You appear to be offline."
-          : "Sorry, I couldn't get a response. Please try again or contact the Darrang College admissions office.";
-        dispatch({
-          type: "ADD",
-          message: {
-            id: uid(),
-            role: "bot",
-            text,
-            timestamp: new Date(),
-            isError: true,
-          },
-        });
-        dispatch({ type: "SET_ERROR", value: text });
-      } finally {
-        clearTimeout(timeout);
-        dispatch({ type: "SET_LOADING", value: false });
-        abortRef.current = null;
+        console.error("Failed to send message:", err);
       }
     },
-    [state.isLoading, state.messages],
+    [sendMessage, status],
   );
 
   const giveFeedback = useCallback((id: string, value: "up" | "down") => {
-    dispatch({ type: "FEEDBACK", id, value });
+    setFeedbacks((prev) => ({ ...prev, [id]: value }));
   }, []);
 
   const reset = useCallback(() => {
-    abortRef.current?.abort();
-    dispatch({ type: "RESET" });
-  }, []);
+    stop();
+    setMessages([]);
+    setFeedbacks({});
+  }, [setMessages, stop]);
 
-  return { ...state, send, giveFeedback, reset };
+  const isLoading = status === "submitted" || status === "streaming";
+
+  return { messages, isLoading, error: error?.message || null, send, giveFeedback, reset };
 }
+
