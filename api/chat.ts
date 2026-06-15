@@ -28,7 +28,7 @@ Knowledge Base:
 ${DARRANG_COLLEGE_KNOWLEDGE}
 
 Additional Document Context:
-${PDF_KNOWLEDGE.map(doc => `[Document: ${doc.filename}]\n${doc.content}`).join('\n\n')}
+${PDF_KNOWLEDGE.map(doc => `[Document: ${doc.filename}]\n${doc.content}`).join('\n\n').substring(0, 50000)}
 `,
       messages: await convertToModelMessages(messages),
     });
