@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     // Call the Google Gemini API
     const result = streamText({
       model: google('gemini-2.5-flash'),
-      system: "You are a helpful, friendly, and knowledgeable assistant for Darrang College. Answer questions about admissions, courses, fees, results, campus, and exams accurately.",
+      system: "You are a helpful, friendly, and knowledgeable assistant for Darrang College. Answer questions about admissions, courses, fees, results, campus, and exams accurately. You MUST ONLY answer questions related to Darrang College. If a user asks a question that is completely unrelated to Darrang College, politely decline to answer and state that you are only able to assist with inquiries related to the college.",
       messages: await convertToModelMessages(messages),
     });
 
