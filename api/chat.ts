@@ -5,6 +5,7 @@ import { PDF_KNOWLEDGE } from '../src/data/pdf-knowledge';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
+export const runtime = 'edge';
 
 // Initialize the Google provider with the user's GEMINI_API_KEY
 const google = createGoogleGenerativeAI({
