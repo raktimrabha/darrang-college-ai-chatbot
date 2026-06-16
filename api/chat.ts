@@ -1,7 +1,7 @@
 import { streamText, convertToModelMessages } from 'ai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { DARRANG_COLLEGE_KNOWLEDGE } from '../src/data/darrang-knowledge';
-import { PDF_KNOWLEDGE } from '../src/data/pdf-knowledge';
+import { DARRANG_COLLEGE_KNOWLEDGE } from '../src/data/darrang-knowledge.js';
+import { PDF_KNOWLEDGE } from '../src/data/pdf-knowledge.js';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
